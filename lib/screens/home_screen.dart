@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'history_detail_screen.dart';
+import 'history_screen.dart';
+import 'running_stats_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -15,7 +18,12 @@ class HomeScreen extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.menu, color: Colors.black, size: 28),
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const HistoryScreen()),
+            );
+          },
         ),
         title: const Text(
           'BOLT',
@@ -47,9 +55,9 @@ class HomeScreen extends StatelessWidget {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
-                  _buildActivityCard('Monday Morning Run', '16/7/2024', '15.00', '5\'00"', '3,00 Km'),
+                  _buildActivityCard(context, 'Monday Morning Run', '16/7/2024', '15.00', '5\'00"', '3,00 Km'),
                   const SizedBox(height: 16),
-                  _buildActivityCard('Sunday Morning Run', '15/7/2024', '1:00:00', '4\'00"', '15,00 Km'),
+                  _buildActivityCard(context, 'Sunday Morning Run', '15/7/2024', '1:00:00', '4\'00"', '15,00 Km'),
                   const SizedBox(height: 24),
 
                   // Phần Find The Club (Tạm ẩn bớt code chi tiết để tập trung cấu trúc chính)
@@ -57,10 +65,18 @@ class HomeScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text('Find The Club Near You', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                      TextButton(onPressed: (){}, child: const Text('See all', style: TextStyle(color: Colors.black54))),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const HistoryScreen()),
+                          );
+                        },
+                        child: const Text('See all', style: TextStyle(color: Colors.black54)),
+                      ),
                     ],
                   ),
-                  _buildHorizontalList(), // Danh sách cuộn ngang các câu lạc bộ
+                  _buildHorizontalList(context), // Danh sách cuộn ngang các câu lạc bộ
                 ],
               ),
             ),
@@ -71,7 +87,7 @@ class HomeScreen extends StatelessWidget {
             bottom: 30,
             left: 20,
             right: 20,
-            child: _buildFloatingBottomBar(),
+            child: _buildFloatingBottomBar(context),
           ),
         ],
       ),
@@ -130,8 +146,16 @@ class HomeScreen extends StatelessWidget {
   }
 
   // 2. Thẻ hoạt động (Activity Card)
-  Widget _buildActivityCard(String title, String date, String time, String pace, String distance) {
-    return Container(
+  Widget _buildActivityCard(BuildContext context, String title, String date, String time, String pace, String distance) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const HistoryDetailScreen()),
+        );
+      },
+      child: Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white, // Nền trắng
@@ -202,27 +226,36 @@ class HomeScreen extends StatelessWidget {
           )
         ],
       ),
+    ),
     );
   }
 
   // 3. Danh sách ảnh nằm ngang (Horizontal List)
-  Widget _buildHorizontalList() {
+  Widget _buildHorizontalList(BuildContext context) {
     return SizedBox(
       height: 120,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: 3,
         itemBuilder: (context, index) {
-          return Container(
-            width: 160,
-            margin: const EdgeInsets.only(right: 12),
-            decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: Colors.grey.shade300,
-                image: const DecorationImage(
-                  image: NetworkImage('https://images.unsplash.com/photo-1530549387720-1bfa36c6451e?auto=format&fit=crop&q=80'),
-                  fit: BoxFit.cover,
-                )
+          return InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Tính năng danh sách CLB đang được cập nhật.')),
+              );
+            },
+            child: Container(
+              width: 160,
+              margin: const EdgeInsets.only(right: 12),
+              decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.grey.shade300,
+                  image: const DecorationImage(
+                    image: NetworkImage('https://images.unsplash.com/photo-1530549387720-1bfa36c6451e?auto=format&fit=crop&q=80'),
+                    fit: BoxFit.cover,
+                  )
+              ),
             ),
           );
         },
@@ -231,7 +264,7 @@ class HomeScreen extends StatelessWidget {
   }
 
   // 4. Thanh Action Bar Nổi ở đáy
-  Widget _buildFloatingBottomBar() {
+  Widget _buildFloatingBottomBar(BuildContext context) {
     return Container(
       height: 70,
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -246,24 +279,50 @@ class HomeScreen extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // Nút Settings
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-            child: const Icon(Icons.settings, size: 24),
+          InkWell(
+            borderRadius: BorderRadius.circular(40),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const HistoryScreen()),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+              child: const Icon(Icons.history, size: 24),
+            ),
           ),
 
           // Nút START trung tâm
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
-            decoration: BoxDecoration(color: brandColor, borderRadius: BorderRadius.circular(25)),
-            child: const Text('START', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, fontStyle: FontStyle.italic)),
+          InkWell(
+            borderRadius: BorderRadius.circular(25),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const RunningStatsScreen()),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+              decoration: BoxDecoration(color: brandColor, borderRadius: BorderRadius.circular(25)),
+              child: const Text('START', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, fontStyle: FontStyle.italic)),
+            ),
           ),
 
           // Nút Music
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-            child: const Icon(Icons.music_note, size: 24),
+          InkWell(
+            borderRadius: BorderRadius.circular(40),
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Tính năng nghe nhạc đang được phát triển.')),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+              child: const Icon(Icons.music_note, size: 24),
+            ),
           ),
         ],
       ),
