@@ -1,93 +1,118 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class HistoryDetailScreen extends StatelessWidget {
   const HistoryDetailScreen({Key? key}) : super(key: key);
 
-  final Color brandColor = const Color(0xFFccff00);
+  static const Color brandColor = Color(0xFFccff00);
+  static const double runnerWeightKg = 70;
+  static const Duration runDuration = Duration(minutes: 15, seconds: 42);
+
+  static const List<LatLng> historyRoute = [
+    LatLng(10.762622, 106.660172),
+    LatLng(10.763245, 106.661344),
+    LatLng(10.763710, 106.662110),
+    LatLng(10.764100, 106.663300),
+    LatLng(10.763470, 106.664050),
+    LatLng(10.762840, 106.663120),
+    LatLng(10.762622, 106.660172),
+  ];
+
+  static const List<double> elevationSamples = [
+    6.0,
+    8.8,
+    9.4,
+    12.3,
+    10.1,
+    11.7,
+    7.5,
+  ];
 
   @override
   Widget build(BuildContext context) {
+    final double distanceKm = _calculateDistanceKm(historyRoute);
+    final double avgPace = _calculateAveragePace(runDuration, distanceKm);
+    final double calories = _calculateCalories(distanceKm, runnerWeightKg);
+    final double elevationGain = _calculateElevationGain(elevationSamples);
+
     return Scaffold(
       body: Stack(
         children: [
-          // 1. Lớp dưới cùng: Bản đồ (Dùng ảnh bạn vừa gửi)
-          SizedBox(
-            width: double.infinity,
-            height: double.infinity,
-            // Thay bằng đường dẫn ảnh thật của bạn: 'assets/images/map_bg.png'
-            child: Image.network(
-              'https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80',
-              fit: BoxFit.cover,
+          GoogleMap(
+            initialCameraPosition: CameraPosition(
+              target: historyRoute.first,
+              zoom: 15,
             ),
+            markers: {
+              Marker(
+                markerId: const MarkerId('start'),
+                position: historyRoute.first,
+                infoWindow: const InfoWindow(title: 'Start'),
+              ),
+              Marker(
+                markerId: const MarkerId('finish'),
+                position: historyRoute.last,
+                infoWindow: const InfoWindow(title: 'Finish'),
+              ),
+            },
+            polylines: {
+              const Polyline(
+                polylineId: PolylineId('history_route'),
+                points: historyRoute,
+                width: 6,
+                color: brandColor,
+              ),
+            },
+            zoomControlsEnabled: false,
+            myLocationButtonEnabled: false,
           ),
-
-          // Lớp phủ trắng mờ
-          Container(color: Colors.white.withOpacity(0.5)),
-
-          // --- PHẦN VẼ LỘ TRÌNH (GIẢ LẬP) ---
-          // Trong thực tế, bạn sẽ dùng thư viện google_maps_flutter có hỗ trợ Polyline.
-          // Ở đây mình dùng CustomPaint để vẽ một đường mô phỏng theo hình.
-          Positioned(
-            top: 250, left: 100,
-            child: CustomPaint(
-              size: const Size(150, 100),
-              painter: RoutePainter(routeColor: brandColor),
-            ),
-          ),
-          // Chấm điểm kết thúc
-          Positioned(
-            top: 310, left: 235,
-            child: Container(
-              width: 16, height: 16,
-              decoration: BoxDecoration(color: Colors.black, shape: BoxShape.circle, border: Border.all(color: brandColor, width: 3)),
-            ),
-          ),
-
-          // 2. Lớp UI (AppBar trong suốt + Nội dung cuộn)
+          Container(color: Colors.white.withOpacity(0.35)),
           SafeArea(
             child: Column(
               children: [
-                // AppBar tùy chỉnh
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                   child: Row(
                     children: [
                       IconButton(
                         icon: const Icon(Icons.menu, size: 28),
-                        onPressed: () => Navigator.pop(context), // Quay lại màn hình trước
+                        onPressed: () => Navigator.pop(context),
                       ),
                     ],
                   ),
                 ),
-
-                // Tiêu đề
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24.0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Monday Morning Run', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                      const Text('Monday Morning Run',
+                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                       IconButton(
                         icon: const Icon(Icons.edit_outlined),
                         onPressed: () {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Chức năng chỉnh sửa đang được phát triển.')),
+                            const SnackBar(
+                                content: Text('Chức năng chỉnh sửa đang được phát triển.')),
                           );
                         },
                       ),
                     ],
                   ),
                 ),
-
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 24.0),
                   child: Divider(),
                 ),
-
-                const Spacer(), // Đẩy phần thống kê xuống dưới cùng
-
-                // 3. Khối thống kê chi tiết (BottomSheet mờ)
-                _buildStatsBottomSheet(),
+                const Spacer(),
+                _buildStatsBottomSheet(
+                  distanceKm: distanceKm,
+                  duration: runDuration,
+                  avgPaceMinPerKm: avgPace,
+                  calories: calories,
+                  elevationGainMeters: elevationGain,
+                ),
               ],
             ),
           ),
@@ -96,12 +121,16 @@ class HistoryDetailScreen extends StatelessWidget {
     );
   }
 
-  // Khối chứa các thẻ thông số ở dưới cùng
-  Widget _buildStatsBottomSheet() {
+  Widget _buildStatsBottomSheet({
+    required double distanceKm,
+    required Duration duration,
+    required double avgPaceMinPerKm,
+    required double calories,
+    required double elevationGainMeters,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
       decoration: const BoxDecoration(
-        // LinearGradient làm mờ dần lên trên cho đẹp
         gradient: LinearGradient(
           begin: Alignment.bottomCenter,
           end: Alignment.topCenter,
@@ -109,36 +138,33 @@ class HistoryDetailScreen extends StatelessWidget {
         ),
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min, // Vừa đủ chiều cao
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Thẻ Xanh tổng quan
           Container(
             padding: const EdgeInsets.symmetric(vertical: 24),
-            decoration: BoxDecoration(color: brandColor, borderRadius: BorderRadius.circular(30)),
+            decoration:
+                BoxDecoration(color: brandColor, borderRadius: BorderRadius.circular(30)),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildMainStat('3,00', 'Km', 'Distance'),
-                Container(width: 1, height: 40, color: Colors.black12), // Vạch chia
-                _buildMainStat('15.00', '', 'Duration'),
+                _buildMainStat(distanceKm.toStringAsFixed(2), 'Km', 'Distance'),
                 Container(width: 1, height: 40, color: Colors.black12),
-                _buildMainStat('5\'00"', '', 'Avg Pace'),
+                _buildMainStat(_formatDuration(duration), '', 'Duration'),
+                Container(width: 1, height: 40, color: Colors.black12),
+                _buildMainStat(_formatPace(avgPaceMinPerKm), '', 'Avg Pace'),
               ],
             ),
           ),
           const SizedBox(height: 16),
-
-          // Danh sách các thẻ chi tiết màu trắng
-          _buildDetailCard('Step Length', 'Distance between steps', '1,00', 'm'),
-          _buildDetailCard('Calories', 'Total energy burned', '854', 'kcal'),
-          _buildDetailCard('Cadence', 'Steps per minute', '212', 'spm'),
-          _buildDetailCard('Elevation Gain', 'Total height that you climb', '100', 'ft'),
+          _buildDetailCard('Calories', 'Total energy burned',
+              calories.round().toString(), 'kcal'),
+          _buildDetailCard('Elevation Gain', 'Total height that you climb',
+              elevationGainMeters.toStringAsFixed(0), 'm'),
         ],
       ),
     );
   }
 
-  // Widget cho Thẻ Xanh
   Widget _buildMainStat(String value, String unit, String label) {
     return Column(
       children: [
@@ -146,7 +172,8 @@ class HistoryDetailScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.baseline,
           textBaseline: TextBaseline.alphabetic,
           children: [
-            Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+            Text(value,
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
             if (unit.isNotEmpty) Text(' $unit', style: const TextStyle(fontSize: 14)),
           ],
         ),
@@ -156,7 +183,6 @@ class HistoryDetailScreen extends StatelessWidget {
     );
   }
 
-  // Widget cho Thẻ Trắng Chi Tiết
   Widget _buildDetailCard(String title, String subtitle, String value, String unit) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -164,7 +190,13 @@ class HistoryDetailScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -172,7 +204,8 @@ class HistoryDetailScreen extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(title,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
               Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.grey)),
             ],
@@ -180,7 +213,8 @@ class HistoryDetailScreen extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+              Text(value,
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
               Text(unit, style: const TextStyle(fontSize: 12, color: Colors.grey)),
             ],
           )
@@ -188,32 +222,60 @@ class HistoryDetailScreen extends StatelessWidget {
       ),
     );
   }
-}
 
-// Lớp phụ trợ để vẽ đường mô phỏng (giả lập Route trên Map)
-class RoutePainter extends CustomPainter {
-  final Color routeColor;
-  RoutePainter({required this.routeColor});
+  double _calculateDistanceKm(List<LatLng> points) {
+    if (points.length < 2) return 0;
 
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = routeColor
-      ..strokeWidth = 4
-      ..style = PaintingStyle.stroke
-      ..strokeJoin = StrokeJoin.round;
+    double totalMeters = 0;
+    for (int i = 1; i < points.length; i++) {
+      totalMeters += Geolocator.distanceBetween(
+        points[i - 1].latitude,
+        points[i - 1].longitude,
+        points[i].latitude,
+        points[i].longitude,
+      );
+    }
 
-    final path = Path();
-    path.moveTo(0, 0);
-    path.lineTo(120, -20); // Đi sang phải, hơi hướng lên
-    path.lineTo(150, 60);  // Rẽ phải đi xuống
-    path.lineTo(120, 80);  // Rẽ vòng qua trái
-    path.lineTo(20, 100);  // Rẽ trái thẳng
-    path.lineTo(0, 0);     // Vòng về điểm bắt đầu
-
-    canvas.drawPath(path, paint);
+    return totalMeters / 1000;
   }
 
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  double _calculateAveragePace(Duration duration, double distanceKm) {
+    if (distanceKm == 0) return 0;
+    return (duration.inSeconds / 60) / distanceKm;
+  }
+
+  double _calculateCalories(double distanceKm, double weightKg) {
+    return weightKg * distanceKm * 1.036;
+  }
+
+  double _calculateElevationGain(List<double> elevations) {
+    if (elevations.length < 2) return 0;
+
+    double gain = 0;
+    for (int i = 1; i < elevations.length; i++) {
+      final double delta = elevations[i] - elevations[i - 1];
+      if (delta > 0) {
+        gain += delta;
+      }
+    }
+    return gain;
+  }
+
+  String _formatDuration(Duration duration) {
+    final int minutes = duration.inMinutes.remainder(60);
+    final int seconds = duration.inSeconds.remainder(60);
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  String _formatPace(double pace) {
+    if (pace == 0 || pace.isInfinite) return '0\'00"';
+    final int minutes = pace.floor();
+    int seconds = ((pace - minutes) * 60).round();
+    int safeMinutes = minutes;
+    if (seconds == 60) {
+      safeMinutes += 1;
+      seconds = 0;
+    }
+    return '$safeMinutes\'${seconds.toString().padLeft(2, '0')}"';
+  }
 }
