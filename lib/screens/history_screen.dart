@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'history_detail_screen.dart';
 
 class HistoryScreen extends StatelessWidget {
   const HistoryScreen({Key? key}) : super(key: key);
@@ -14,7 +15,7 @@ class HistoryScreen extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.menu, color: Colors.black, size: 28),
-          onPressed: () {},
+          onPressed: () => Navigator.pop(context),
         ),
       ),
       body: Column(
@@ -53,13 +54,13 @@ class HistoryScreen extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               children: [
-                _buildHistoryCard('Monday Morning Run', '16/7/2024', '15.00', '5\'00"', '3,00 Km'),
+                _buildHistoryCard(context, 'Monday Morning Run', '16/7/2024', '15.00', '5\'00"', '3,00 Km'),
                 const SizedBox(height: 16),
-                _buildHistoryCard('Sunday Morning Run', '15/7/2024', '1:00.00', '4\'00"', '15,00 Km'),
+                _buildHistoryCard(context, 'Sunday Morning Run', '15/7/2024', '1:00.00', '4\'00"', '15,00 Km'),
                 const SizedBox(height: 16),
-                _buildHistoryCard('Saturday Morning Run', '14/7/2024', '2:06.00', '6\'00"', '21,00 Km'),
+                _buildHistoryCard(context, 'Saturday Morning Run', '14/7/2024', '2:06.00', '6\'00"', '21,00 Km'),
                 const SizedBox(height: 16),
-                _buildHistoryCard('Friday Morning Run', '13/7/2024', '49.00', '7\'00"', '7,00 Km'),
+                _buildHistoryCard(context, 'Friday Morning Run', '13/7/2024', '49.00', '7\'00"', '7,00 Km'),
                 const SizedBox(height: 30), // Padding đáy
               ],
             ),
@@ -81,8 +82,16 @@ class HistoryScreen extends StatelessWidget {
   }
 
   // Widget Thẻ Lịch sử chạy (Giống trang Home nhưng có nền xanh nhạt)
-  Widget _buildHistoryCard(String title, String date, String time, String pace, String distance) {
-    return Container(
+  Widget _buildHistoryCard(BuildContext context, String title, String date, String time, String pace, String distance) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const HistoryDetailScreen()),
+        );
+      },
+      child: Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFFF7FFF4), // Màu trắng ám xanh nhạt theo thiết kế
@@ -141,6 +150,7 @@ class HistoryScreen extends StatelessWidget {
           )
         ],
       ),
+    ),
     );
   }
 }

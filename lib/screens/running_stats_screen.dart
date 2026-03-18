@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'home_screen.dart';
 import 'running_map_screen.dart'; // Import để chuyển sang màn hình Map
 
 class RunningStatsScreen extends StatelessWidget {
@@ -92,10 +93,38 @@ class RunningStatsScreen extends StatelessWidget {
                     ),
                   ),
                   // Nút Tạm dừng
-                  Container(
-                    padding: const EdgeInsets.all(30),
-                    decoration: BoxDecoration(color: brandColor, shape: BoxShape.circle),
-                    child: const Text('PAUSE', style: TextStyle(fontWeight: FontWeight.w900, fontStyle: FontStyle.italic, fontSize: 18)),
+                  InkWell(
+                    onTap: () {
+                      showDialog<void>(
+                        context: context,
+                        builder: (dialogContext) => AlertDialog(
+                          title: const Text('Kết thúc buổi chạy?'),
+                          content: const Text('Bạn có muốn dừng buổi chạy và quay về trang chủ không?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(dialogContext),
+                              child: const Text('Tiếp tục chạy'),
+                            ),
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.pop(dialogContext);
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const HomeScreen()),
+                                  (route) => false,
+                                );
+                              },
+                              child: const Text('Kết thúc'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(30),
+                      decoration: BoxDecoration(color: brandColor, shape: BoxShape.circle),
+                      child: const Text('PAUSE', style: TextStyle(fontWeight: FontWeight.w900, fontStyle: FontStyle.italic, fontSize: 18)),
+                    ),
                   ),
                 ],
               ),

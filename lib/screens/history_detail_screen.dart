@@ -67,7 +67,14 @@ class HistoryDetailScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text('Monday Morning Run', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                      IconButton(icon: const Icon(Icons.edit_outlined), onPressed: (){}),
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined),
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Chức năng chỉnh sửa đang được phát triển.')),
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),

@@ -69,10 +69,13 @@ class RunningMapScreen extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           // Nút Resume/Tiếp tục (Màu xanh)
-                          Container(
-                            padding: const EdgeInsets.all(30),
-                            decoration: BoxDecoration(color: brandColor, shape: BoxShape.circle),
-                            child: const Icon(Icons.keyboard_double_arrow_right, size: 36),
+                          InkWell(
+                            onTap: () => Navigator.pop(context),
+                            child: Container(
+                              padding: const EdgeInsets.all(30),
+                              decoration: BoxDecoration(color: brandColor, shape: BoxShape.circle),
+                              child: const Icon(Icons.keyboard_double_arrow_right, size: 36),
+                            ),
                           ),
                           // Nút Pause (Viền xanh, nền trắng) - Bấm vào để quay lại màn hình trước
                           InkWell(

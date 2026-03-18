@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async'; // Dùng để tạo độ trễ (delay)
-import 'home_screen.dart';
+import 'intro_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -15,9 +15,10 @@ class _SplashScreenState extends State<SplashScreen> {
     super.initState();
     // Thiết lập thời gian chờ 2.5 giây rồi chuyển sang màn hình Intro
     Timer(const Duration(milliseconds: 2500), () {
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
+        MaterialPageRoute(builder: (context) => const IntroScreen()),
       );
     });
   }

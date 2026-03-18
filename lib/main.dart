@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:runer/screens/running_stats_screen.dart';
 import 'package:runer/screens/splash_screen.dart';
 
 void main() {
@@ -18,7 +17,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const RunningStatsScreen(),
+      home: const SplashScreen(),
     );
   }
 }
