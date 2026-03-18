@@ -1,146 +1,206 @@
 import 'package:flutter/material.dart';
-import 'home_screen.dart';
-import 'running_map_screen.dart'; // Import để chuyển sang màn hình Map
 
-class RunningStatsScreen extends StatelessWidget {
+import '../services/run_tracking_service.dart';
+import 'home_screen.dart';
+import 'running_map_screen.dart';
+
+class RunningStatsScreen extends StatefulWidget {
   const RunningStatsScreen({Key? key}) : super(key: key);
 
+  @override
+  State<RunningStatsScreen> createState() => _RunningStatsScreenState();
+}
+
+class _RunningStatsScreenState extends State<RunningStatsScreen> {
   final Color brandColor = const Color(0xFFccff00);
+  final RunTrackingService _trackingService = RunTrackingService.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _trackingService.startTracking();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            children: [
-              // Thanh trạng thái (Thời tiết & GPS)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return AnimatedBuilder(
+      animation: _trackingService,
+      builder: (context, _) {
+        return Scaffold(
+          backgroundColor: Colors.white,
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
                 children: [
-                  _buildStatusChip(Icons.wb_sunny_outlined, '32°C'),
-                  // Icon vạch sóng ở giữa (giả lập)
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Container(width: 20, height: 4, decoration: BoxDecoration(color: brandColor, borderRadius: BorderRadius.circular(2))),
-                      const SizedBox(width: 4),
-                      Container(width: 20, height: 4, decoration: BoxDecoration(color: brandColor.withOpacity(0.3), borderRadius: BorderRadius.circular(2))),
+                      _buildStatusChip(Icons.wb_sunny_outlined, '32°C'),
+                      Row(
+                        children: [
+                          Container(
+                            width: 20,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: brandColor,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Container(
+                            width: 20,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: _trackingService.isTracking
+                                  ? brandColor
+                                  : brandColor.withOpacity(0.3),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ],
+                      ),
+                      _buildStatusChip(Icons.wifi_tethering, _trackingService.gpsStatus),
                     ],
                   ),
-                  _buildStatusChip(Icons.wifi_tethering, 'GPS'),
-                ],
-              ),
-
-              const Spacer(), // Đẩy nội dung ra giữa
-
-              // Thông số chính
-              const Text(
-                '00,00',
-                style: TextStyle(fontSize: 90, fontWeight: FontWeight.w900, fontStyle: FontStyle.italic, letterSpacing: -3),
-              ),
-              const Text('Distance (Km)', style: TextStyle(fontSize: 16, color: Colors.grey)),
-
-              const SizedBox(height: 50),
-
-              // 3 Thông số phụ
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildSubStat(Icons.directions_run, '0\'00"', 'Avg Pace'),
-                  _buildSubStat(Icons.timer_outlined, '00.00', 'Duration'),
-                  _buildSubStat(Icons.local_fire_department_outlined, '0 kcal', 'Calories'),
-                ],
-              ),
-
-              const Spacer(),
-
-              // Trình phát nhạc
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                decoration: BoxDecoration(color: brandColor, borderRadius: BorderRadius.circular(20)),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Icon(Icons.pause, size: 30),
-                    Column(
-                      children: const [
-                        Text('Sweet Disposition', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                        Text('The Temper Trap', style: TextStyle(fontSize: 12, color: Colors.black54)),
-                      ],
-                    ),
-                    const Icon(Icons.skip_next, size: 30),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 30),
-
-              // Nút điều khiển đáy
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  // Nút Bản đồ (Nhấn vào sẽ chuyển sang màn hình Map)
-                  InkWell(
-                    onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => const RunningMapScreen()));
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: brandColor, width: 2)),
-                      child: const Icon(Icons.map_outlined, size: 36),
+                  const Spacer(),
+                  Text(
+                    _trackingService.formatDistanceKm(),
+                    style: const TextStyle(
+                      fontSize: 90,
+                      fontWeight: FontWeight.w900,
+                      fontStyle: FontStyle.italic,
+                      letterSpacing: -3,
                     ),
                   ),
-                  // Nút Tạm dừng
-                  InkWell(
-                    onTap: () {
-                      showDialog<void>(
-                        context: context,
-                        builder: (dialogContext) => AlertDialog(
-                          title: const Text('Kết thúc buổi chạy?'),
-                          content: const Text('Bạn có muốn dừng buổi chạy và quay về trang chủ không?'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(dialogContext),
-                              child: const Text('Tiếp tục chạy'),
-                            ),
-                            ElevatedButton(
-                              onPressed: () {
-                                Navigator.pop(dialogContext);
-                                Navigator.pushAndRemoveUntil(
-                                  context,
-                                  MaterialPageRoute(builder: (context) => const HomeScreen()),
-                                  (route) => false,
-                                );
-                              },
-                              child: const Text('Kết thúc'),
-                            ),
+                  const Text('Distance (Km)',
+                      style: TextStyle(fontSize: 16, color: Colors.grey)),
+                  const SizedBox(height: 50),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildSubStat(Icons.directions_run,
+                          _trackingService.formatAveragePace(), 'Avg Pace'),
+                      _buildSubStat(Icons.timer_outlined,
+                          _trackingService.formatDuration(), 'Duration'),
+                      _buildSubStat(Icons.local_fire_department_outlined,
+                          '${_trackingService.formatCalories()} kcal', 'Calories'),
+                    ],
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                    decoration: BoxDecoration(
+                      color: brandColor,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: const [
+                        Icon(Icons.pause, size: 30),
+                        Column(
+                          children: [
+                            Text('Sweet Disposition',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 16)),
+                            Text('The Temper Trap',
+                                style: TextStyle(
+                                    fontSize: 12, color: Colors.black54)),
                           ],
                         ),
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(30),
-                      decoration: BoxDecoration(color: brandColor, shape: BoxShape.circle),
-                      child: const Text('PAUSE', style: TextStyle(fontWeight: FontWeight.w900, fontStyle: FontStyle.italic, fontSize: 18)),
+                        Icon(Icons.skip_next, size: 30),
+                      ],
                     ),
                   ),
+                  const SizedBox(height: 30),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const RunningMapScreen(),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: brandColor, width: 2),
+                          ),
+                          child: const Icon(Icons.map_outlined, size: 36),
+                        ),
+                      ),
+                      InkWell(
+                        onTap: () {
+                          _showStopDialog(context);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(30),
+                          decoration:
+                              BoxDecoration(color: brandColor, shape: BoxShape.circle),
+                          child: const Text(
+                            'PAUSE',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontStyle: FontStyle.italic,
+                              fontSize: 18,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
                 ],
               ),
-              const SizedBox(height: 20),
-            ],
+            ),
           ),
-        ),
+        );
+      },
+    );
+  }
+
+  void _showStopDialog(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Kết thúc buổi chạy?'),
+        content: const Text('Bạn có muốn dừng buổi chạy và quay về trang chủ không?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Tiếp tục chạy'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              await _trackingService.stopAndReset();
+              if (!context.mounted) return;
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const HomeScreen()),
+                (route) => false,
+              );
+            },
+            child: const Text('Kết thúc'),
+          ),
+        ],
       ),
     );
   }
 
-  // Widget tạo Chip trạng thái (Thời tiết / GPS)
   Widget _buildStatusChip(IconData icon, String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(color: const Color(0xFFE8F3D6), borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F3D6),
+        borderRadius: BorderRadius.circular(20),
+      ),
       child: Row(
         children: [
           Icon(icon, size: 20),
@@ -151,7 +211,6 @@ class RunningStatsScreen extends StatelessWidget {
     );
   }
 
-  // Widget tạo thông số phụ
   Widget _buildSubStat(IconData icon, String value, String label) {
     return Column(
       children: [
