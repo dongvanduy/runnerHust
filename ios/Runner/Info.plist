@@ -51,6 +51,10 @@
 	<string>Ứng dụng cần vị trí để tiếp tục ghi nhận buổi chạy.</string>
 	<key>io.flutter.embedded_views_preview</key>
 	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+	</array>
 	<key>GMSApiKey</key>
 	<string>YOUR_IOS_MAPS_API_KEY</string>
 

@@ -6,10 +6,6 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 
 class RunTrackingService extends ChangeNotifier {
-  RunTrackingService._();
-
-  static final RunTrackingService instance = RunTrackingService._();
-
   static const double _defaultWeightKg = 70;
 
   final Location _location = Location();
@@ -37,7 +33,6 @@ class RunTrackingService extends ChangeNotifier {
   }
 
   double get calories {
-    // Running calories ước tính: kcal ≈ kg * km * 1.036
     return _defaultWeightKg * distanceKm * 1.036;
   }
 
@@ -59,28 +54,46 @@ class RunTrackingService extends ChangeNotifier {
       notifyListeners();
     });
 
-    _positionSubscription = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.bestForNavigation,
-        distanceFilter: 3,
+    const LocationSettings locationSettings = LocationSettings(
+      accuracy: LocationAccuracy.bestForNavigation,
+      distanceFilter: 3,
+    );
+
+    const AndroidSettings androidSettings = AndroidSettings(
+      accuracy: LocationAccuracy.bestForNavigation,
+      distanceFilter: 3,
+      foregroundNotificationConfig: ForegroundNotificationConfig(
+        notificationTitle: 'Run tracking is active',
+        notificationText: 'Your route is being recorded in background.',
+        enableWakeLock: true,
       ),
+    );
+
+    const AppleSettings appleSettings = AppleSettings(
+      accuracy: LocationAccuracy.bestForNavigation,
+      distanceFilter: 3,
+      allowBackgroundLocationUpdates: true,
+      showBackgroundLocationIndicator: true,
+    );
+
+    _positionSubscription = Geolocator.getPositionStream(
+      locationSettings: defaultTargetPlatform == TargetPlatform.android
+          ? androidSettings
+          : defaultTargetPlatform == TargetPlatform.iOS
+              ? appleSettings
+              : locationSettings,
     ).listen(_handlePositionUpdate);
 
     notifyListeners();
   }
 
-  Future<void> pauseTracking() async {
+  Future<void> stopAndReset() async {
     await _positionSubscription?.cancel();
     _positionSubscription = null;
     _durationTimer?.cancel();
     _durationTimer = null;
     _isTracking = false;
-    _gpsStatus = 'Paused';
-    notifyListeners();
-  }
 
-  Future<void> stopAndReset() async {
-    await pauseTracking();
     _routePoints.clear();
     _duration = Duration.zero;
     _distanceMeters = 0;

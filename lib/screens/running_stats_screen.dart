@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../services/run_tracking_service.dart';
+import '../l10n/app_localizations.dart';
+import '../state/app_state.dart';
 import 'home_screen.dart';
 import 'running_map_screen.dart';
 
@@ -13,19 +15,24 @@ class RunningStatsScreen extends StatefulWidget {
 
 class _RunningStatsScreenState extends State<RunningStatsScreen> {
   final Color brandColor = const Color(0xFFccff00);
-  final RunTrackingService _trackingService = RunTrackingService.instance;
 
   @override
   void initState() {
     super.initState();
-    _trackingService.startTracking();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<AppState>().startRunTracking();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _trackingService,
-      builder: (context, _) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+
+    return Consumer<AppState>(
+      builder: (context, appState, _) {
+        final tracking = appState.trackingService;
+
         return Scaffold(
           backgroundColor: Colors.white,
           body: SafeArea(
@@ -52,7 +59,7 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
                             width: 20,
                             height: 4,
                             decoration: BoxDecoration(
-                              color: _trackingService.isTracking
+                              color: tracking.isTracking
                                   ? brandColor
                                   : brandColor.withOpacity(0.3),
                               borderRadius: BorderRadius.circular(2),
@@ -60,12 +67,12 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
                           ),
                         ],
                       ),
-                      _buildStatusChip(Icons.wifi_tethering, _trackingService.gpsStatus),
+                      _buildStatusChip(Icons.wifi_tethering, tracking.gpsStatus),
                     ],
                   ),
                   const Spacer(),
                   Text(
-                    _trackingService.formatDistanceKm(),
+                    tracking.formatDistanceKm(),
                     style: const TextStyle(
                       fontSize: 90,
                       fontWeight: FontWeight.w900,
@@ -73,47 +80,30 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
                       letterSpacing: -3,
                     ),
                   ),
-                  const Text('Distance (Km)',
-                      style: TextStyle(fontSize: 16, color: Colors.grey)),
+                  Text(l10n.t('distanceKm'),
+                      style: const TextStyle(fontSize: 16, color: Colors.grey)),
                   const SizedBox(height: 50),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildSubStat(Icons.directions_run,
-                          _trackingService.formatAveragePace(), 'Avg Pace'),
-                      _buildSubStat(Icons.timer_outlined,
-                          _trackingService.formatDuration(), 'Duration'),
-                      _buildSubStat(Icons.local_fire_department_outlined,
-                          '${_trackingService.formatCalories()} kcal', 'Calories'),
+                      _buildSubStat(
+                        Icons.directions_run,
+                        tracking.formatAveragePace(),
+                        l10n.t('avgPace'),
+                      ),
+                      _buildSubStat(
+                        Icons.timer_outlined,
+                        tracking.formatDuration(),
+                        l10n.t('duration'),
+                      ),
+                      _buildSubStat(
+                        Icons.local_fire_department_outlined,
+                        '${tracking.formatCalories()} kcal',
+                        l10n.t('calories'),
+                      ),
                     ],
                   ),
                   const Spacer(),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                    decoration: BoxDecoration(
-                      color: brandColor,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
-                        Icon(Icons.pause, size: 30),
-                        Column(
-                          children: [
-                            Text('Sweet Disposition',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 16)),
-                            Text('The Temper Trap',
-                                style: TextStyle(
-                                    fontSize: 12, color: Colors.black54)),
-                          ],
-                        ),
-                        Icon(Icons.skip_next, size: 30),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 30),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
@@ -136,19 +126,17 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
                         ),
                       ),
                       InkWell(
-                        onTap: () {
-                          _showStopDialog(context);
-                        },
+                        onTap: () => _showStopDialog(context),
                         child: Container(
                           padding: const EdgeInsets.all(30),
                           decoration:
                               BoxDecoration(color: brandColor, shape: BoxShape.circle),
-                          child: const Text(
-                            'PAUSE',
-                            style: TextStyle(
+                          child: Text(
+                            l10n.t('finish').toUpperCase(),
+                            style: const TextStyle(
                               fontWeight: FontWeight.w900,
                               fontStyle: FontStyle.italic,
-                              fontSize: 18,
+                              fontSize: 16,
                             ),
                           ),
                         ),
@@ -166,20 +154,21 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
   }
 
   void _showStopDialog(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Kết thúc buổi chạy?'),
-        content: const Text('Bạn có muốn dừng buổi chạy và quay về trang chủ không?'),
+        title: Text(l10n.t('endRunQuestion')),
+        content: Text(l10n.t('endRunDesc')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Tiếp tục chạy'),
+            child: Text(l10n.t('continueRun')),
           ),
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(dialogContext);
-              await _trackingService.stopAndReset();
+              await context.read<AppState>().stopRunAndSave();
               if (!context.mounted) return;
               Navigator.pushAndRemoveUntil(
                 context,
@@ -187,7 +176,7 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
                 (route) => false,
               );
             },
-            child: const Text('Kết thúc'),
+            child: Text(l10n.t('finish')),
           ),
         ],
       ),

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:provider/provider.dart';
 
-import '../services/run_tracking_service.dart';
+import '../l10n/app_localizations.dart';
+import '../state/app_state.dart';
 
 class RunningMapScreen extends StatefulWidget {
   const RunningMapScreen({Key? key}) : super(key: key);
@@ -12,16 +14,16 @@ class RunningMapScreen extends StatefulWidget {
 
 class _RunningMapScreenState extends State<RunningMapScreen> {
   final Color brandColor = const Color(0xFFccff00);
-  final RunTrackingService _trackingService = RunTrackingService.instance;
-
   GoogleMapController? _mapController;
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _trackingService,
-      builder: (context, _) {
-        final List<LatLng> routePoints = _trackingService.routePoints;
+    final AppLocalizations l10n = AppLocalizations.of(context);
+
+    return Consumer<AppState>(
+      builder: (context, appState, _) {
+        final tracking = appState.trackingService;
+        final List<LatLng> routePoints = tracking.routePoints;
         final LatLng initialTarget = routePoints.isNotEmpty
             ? routePoints.last
             : const LatLng(10.762622, 106.660172);
@@ -74,7 +76,7 @@ class _RunningMapScreenState extends State<RunningMapScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           _buildStatusChip(Icons.wb_sunny_outlined, '32°C'),
-                          _buildStatusChip(Icons.wifi_tethering, _trackingService.gpsStatus),
+                          _buildStatusChip(Icons.wifi_tethering, tracking.gpsStatus),
                         ],
                       ),
                       Column(
@@ -83,11 +85,11 @@ class _RunningMapScreenState extends State<RunningMapScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: [
                               _buildSubStat(Icons.directions_run,
-                                  _trackingService.formatAveragePace(), 'Avg Pace'),
+                                  tracking.formatAveragePace(), l10n.t('avgPace')),
                               _buildSubStat(Icons.timer_outlined,
-                                  _trackingService.formatDuration(), 'Duration'),
+                                  tracking.formatDuration(), l10n.t('duration')),
                               _buildSubStat(Icons.local_fire_department_outlined,
-                                  '${_trackingService.formatCalories()} kcal', 'Calories'),
+                                  '${tracking.formatCalories()} kcal', l10n.t('calories')),
                             ],
                           ),
                           const SizedBox(height: 16),
@@ -95,7 +97,7 @@ class _RunningMapScreenState extends State<RunningMapScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               _buildSubStat(Icons.height,
-                                  '${_trackingService.formatElevationGainMeters()} m', 'Elevation Gain'),
+                                  '${tracking.formatElevationGainMeters()} m', l10n.t('elevationGain')),
                             ],
                           ),
                           const SizedBox(height: 30),
@@ -106,8 +108,8 @@ class _RunningMapScreenState extends State<RunningMapScreen> {
                                 onTap: () => Navigator.pop(context),
                                 child: Container(
                                   padding: const EdgeInsets.all(30),
-                                  decoration: BoxDecoration(
-                                      color: brandColor, shape: BoxShape.circle),
+                                  decoration:
+                                      BoxDecoration(color: brandColor, shape: BoxShape.circle),
                                   child: const Icon(Icons.keyboard_double_arrow_right,
                                       size: 36),
                                 ),
@@ -121,9 +123,9 @@ class _RunningMapScreenState extends State<RunningMapScreen> {
                                     shape: BoxShape.circle,
                                     border: Border.all(color: brandColor, width: 2),
                                   ),
-                                  child: const Text(
-                                    'PAUSE',
-                                    style: TextStyle(
+                                  child: Text(
+                                    l10n.t('finish').toUpperCase(),
+                                    style: const TextStyle(
                                       fontWeight: FontWeight.w900,
                                       fontStyle: FontStyle.italic,
                                       fontSize: 18,
