@@ -1,17 +1,17 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:geolocator/geolocator.dart' as geo;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:location/location.dart';
+import 'package:location/location.dart' as loc;
 
 class RunTrackingService extends ChangeNotifier {
   static const double _defaultWeightKg = 70;
 
-  final Location _location = Location();
+  final loc.Location _location = loc.Location();
   final List<LatLng> _routePoints = <LatLng>[];
 
-  StreamSubscription<Position>? _positionSubscription;
+  StreamSubscription<geo.Position>? _positionSubscription;
   Timer? _durationTimer;
 
   Duration _duration = Duration.zero;
@@ -32,9 +32,7 @@ class RunTrackingService extends ChangeNotifier {
     return (_duration.inSeconds / 60) / distanceKm;
   }
 
-  double get calories {
-    return _defaultWeightKg * distanceKm * 1.036;
-  }
+  double get calories => _defaultWeightKg * distanceKm * 1.036;
 
   Future<void> startTracking() async {
     if (_isTracking) return;
@@ -54,29 +52,29 @@ class RunTrackingService extends ChangeNotifier {
       notifyListeners();
     });
 
-    const LocationSettings locationSettings = LocationSettings(
-      accuracy: LocationAccuracy.bestForNavigation,
+    final geo.LocationSettings locationSettings = geo.LocationSettings(
+      accuracy: geo.LocationAccuracy.bestForNavigation,
       distanceFilter: 3,
     );
 
-    const AndroidSettings androidSettings = AndroidSettings(
-      accuracy: LocationAccuracy.bestForNavigation,
+    final geo.AndroidSettings androidSettings = geo.AndroidSettings(
+      accuracy: geo.LocationAccuracy.bestForNavigation,
       distanceFilter: 3,
-      foregroundNotificationConfig: ForegroundNotificationConfig(
+      foregroundNotificationConfig: const geo.ForegroundNotificationConfig(
         notificationTitle: 'Run tracking is active',
         notificationText: 'Your route is being recorded in background.',
         enableWakeLock: true,
       ),
     );
 
-    const AppleSettings appleSettings = AppleSettings(
-      accuracy: LocationAccuracy.bestForNavigation,
+    final geo.AppleSettings appleSettings = geo.AppleSettings(
+      accuracy: geo.LocationAccuracy.bestForNavigation,
       distanceFilter: 3,
       allowBackgroundLocationUpdates: true,
       showBackgroundLocationIndicator: true,
     );
 
-    _positionSubscription = Geolocator.getPositionStream(
+    _positionSubscription = geo.Geolocator.getPositionStream(
       locationSettings: defaultTargetPlatform == TargetPlatform.android
           ? androidSettings
           : defaultTargetPlatform == TargetPlatform.iOS
@@ -103,14 +101,14 @@ class RunTrackingService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Position? _lastPosition;
+  geo.Position? _lastPosition;
 
-  void _handlePositionUpdate(Position position) {
+  void _handlePositionUpdate(geo.Position position) {
     final LatLng newPoint = LatLng(position.latitude, position.longitude);
 
     if (_routePoints.isNotEmpty) {
       final LatLng lastPoint = _routePoints.last;
-      final double segmentDistance = Geolocator.distanceBetween(
+      final double segmentDistance = geo.Geolocator.distanceBetween(
         lastPoint.latitude,
         lastPoint.longitude,
         newPoint.latitude,
@@ -119,7 +117,7 @@ class RunTrackingService extends ChangeNotifier {
 
       _distanceMeters += segmentDistance;
 
-      final Position? previousPosition = _lastPosition;
+      final geo.Position? previousPosition = _lastPosition;
       if (previousPosition != null) {
         final double gain = position.altitude - previousPosition.altitude;
         if (gain > 0) {
@@ -142,23 +140,23 @@ class RunTrackingService extends ChangeNotifier {
       }
     }
 
-    PermissionStatus permission = await _location.hasPermission();
-    if (permission == PermissionStatus.denied) {
+    loc.PermissionStatus permission = await _location.hasPermission();
+    if (permission == loc.PermissionStatus.denied) {
       permission = await _location.requestPermission();
     }
 
-    if (permission != PermissionStatus.granted &&
-        permission != PermissionStatus.grantedLimited) {
+    if (permission != loc.PermissionStatus.granted &&
+        permission != loc.PermissionStatus.grantedLimited) {
       return false;
     }
 
-    LocationPermission geoPermission = await Geolocator.checkPermission();
-    if (geoPermission == LocationPermission.denied) {
-      geoPermission = await Geolocator.requestPermission();
+    geo.LocationPermission geoPermission = await geo.Geolocator.checkPermission();
+    if (geoPermission == geo.LocationPermission.denied) {
+      geoPermission = await geo.Geolocator.requestPermission();
     }
 
-    return geoPermission == LocationPermission.always ||
-        geoPermission == LocationPermission.whileInUse;
+    return geoPermission == geo.LocationPermission.always ||
+        geoPermission == geo.LocationPermission.whileInUse;
   }
 
   String formatDuration() {
