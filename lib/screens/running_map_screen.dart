@@ -1,108 +1,158 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:provider/provider.dart';
 
-class RunningMapScreen extends StatelessWidget {
+import '../l10n/app_localizations.dart';
+import '../state/app_state.dart';
+
+class RunningMapScreen extends StatefulWidget {
   const RunningMapScreen({Key? key}) : super(key: key);
 
+  @override
+  State<RunningMapScreen> createState() => _RunningMapScreenState();
+}
+
+class _RunningMapScreenState extends State<RunningMapScreen> {
   final Color brandColor = const Color(0xFFccff00);
+  GoogleMapController? _mapController;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          // 1. Lớp dưới cùng: Bản đồ (Dùng ảnh giả lập)
-          SizedBox(
-            width: double.infinity,
-            height: double.infinity,
-            child: Image.network(
-              'https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80', // Ảnh bản đồ sáng màu
-              fit: BoxFit.cover,
-            ),
-          ),
+    final AppLocalizations l10n = AppLocalizations.of(context);
 
-          // Lớp phủ trắng mờ nhẹ để các thông số dễ đọc hơn
-          Container(
-            color: Colors.white.withOpacity(0.7),
-          ),
+    return Consumer<AppState>(
+      builder: (context, appState, _) {
+        final tracking = appState.trackingService;
+        final List<LatLng> routePoints = tracking.routePoints;
+        final LatLng initialTarget = routePoints.isNotEmpty
+            ? routePoints.last
+            : const LatLng(10.762622, 106.660172);
 
-          // Chấm tròn báo vị trí hiện tại
-          Center(
-            child: Container(
-              width: 20, height: 20,
-              decoration: BoxDecoration(color: brandColor, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 3)),
-              child: Center(child: Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.black, shape: BoxShape.circle))),
-            ),
-          ),
+        final Set<Marker> markers = routePoints.isEmpty
+            ? <Marker>{}
+            : <Marker>{
+                Marker(
+                  markerId: const MarkerId('current_position'),
+                  position: routePoints.last,
+                ),
+              };
 
-          // 2. Lớp UI phía trên
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Thanh trạng thái trên cùng
-                  Row(
+        final Set<Polyline> polylines = routePoints.length < 2
+            ? <Polyline>{}
+            : <Polyline>{
+                Polyline(
+                  polylineId: const PolylineId('run_route'),
+                  points: routePoints,
+                  width: 6,
+                  color: brandColor,
+                ),
+              };
+
+        if (_mapController != null && routePoints.isNotEmpty) {
+          _mapController!.animateCamera(
+            CameraUpdate.newLatLng(routePoints.last),
+          );
+        }
+
+        return Scaffold(
+          body: Stack(
+            children: [
+              GoogleMap(
+                initialCameraPosition: CameraPosition(target: initialTarget, zoom: 17),
+                myLocationEnabled: true,
+                myLocationButtonEnabled: false,
+                polylines: polylines,
+                markers: markers,
+                onMapCreated: (controller) => _mapController = controller,
+              ),
+              Container(color: Colors.white.withOpacity(0.2)),
+              SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildStatusChip(Icons.wb_sunny_outlined, '32°C'),
-                      _buildStatusChip(Icons.wifi_tethering, 'GPS'),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _buildStatusChip(Icons.wb_sunny_outlined, '32°C'),
+                          _buildStatusChip(Icons.wifi_tethering, tracking.gpsStatus),
+                        ],
+                      ),
+                      Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              _buildSubStat(Icons.directions_run,
+                                  tracking.formatAveragePace(), l10n.t('avgPace')),
+                              _buildSubStat(Icons.timer_outlined,
+                                  tracking.formatDuration(), l10n.t('duration')),
+                              _buildSubStat(Icons.local_fire_department_outlined,
+                                  '${tracking.formatCalories()} kcal', l10n.t('calories')),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _buildSubStat(Icons.height,
+                                  '${tracking.formatElevationGainMeters()} m', l10n.t('elevationGain')),
+                            ],
+                          ),
+                          const SizedBox(height: 30),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              InkWell(
+                                onTap: () => Navigator.pop(context),
+                                child: Container(
+                                  padding: const EdgeInsets.all(30),
+                                  decoration:
+                                      BoxDecoration(color: brandColor, shape: BoxShape.circle),
+                                  child: const Icon(Icons.keyboard_double_arrow_right,
+                                      size: 36),
+                                ),
+                              ),
+                              InkWell(
+                                onTap: () => Navigator.pop(context),
+                                child: Container(
+                                  padding: const EdgeInsets.all(30),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: brandColor, width: 2),
+                                  ),
+                                  child: Text(
+                                    l10n.t('finish').toUpperCase(),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      fontStyle: FontStyle.italic,
+                                      fontSize: 18,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      )
                     ],
                   ),
-
-                  // Phần điều khiển và thông số bên dưới
-                  Column(
-                    children: [
-                      // 3 Thông số
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _buildSubStat(Icons.directions_run, '0\'00"', 'Avg Pace'),
-                          _buildSubStat(Icons.timer_outlined, '00.00', 'Duration'),
-                          _buildSubStat(Icons.local_fire_department_outlined, '0 kcal', 'Calories'),
-                        ],
-                      ),
-                      const SizedBox(height: 30),
-
-                      // Cụm nút bấm
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          // Nút Resume/Tiếp tục (Màu xanh)
-                          InkWell(
-                            onTap: () => Navigator.pop(context),
-                            child: Container(
-                              padding: const EdgeInsets.all(30),
-                              decoration: BoxDecoration(color: brandColor, shape: BoxShape.circle),
-                              child: const Icon(Icons.keyboard_double_arrow_right, size: 36),
-                            ),
-                          ),
-                          // Nút Pause (Viền xanh, nền trắng) - Bấm vào để quay lại màn hình trước
-                          InkWell(
-                            onTap: () => Navigator.pop(context),
-                            child: Container(
-                              padding: const EdgeInsets.all(30),
-                              decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, border: Border.all(color: brandColor, width: 2)),
-                              child: const Text('PAUSE', style: TextStyle(fontWeight: FontWeight.w900, fontStyle: FontStyle.italic, fontSize: 18)),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  )
-                ],
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
   Widget _buildStatusChip(IconData icon, String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(color: const Color(0xFFE8F3D6), borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(
+          color: const Color(0xFFE8F3D6), borderRadius: BorderRadius.circular(20)),
       child: Row(
         children: [
           Icon(icon, size: 20),
