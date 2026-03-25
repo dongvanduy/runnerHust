@@ -37,20 +37,25 @@ class RunTrackingService extends ChangeNotifier {
   Future<void> startTracking() async {
     if (_isTracking) return;
 
+    _isTracking = true;
+    _gpsStatus = 'Initializing GPS...';
+    _durationTimer ??= Timer.periodic(const Duration(seconds: 1), (_) {
+      _duration += const Duration(seconds: 1);
+      notifyListeners();
+    });
+    notifyListeners();
+
     final bool ready = await _ensureLocationReady();
     if (!ready) {
       _gpsStatus = 'Permission denied';
+      _durationTimer?.cancel();
+      _durationTimer = null;
+      _isTracking = false;
       notifyListeners();
       return;
     }
 
     _gpsStatus = 'GPS Active';
-    _isTracking = true;
-
-    _durationTimer ??= Timer.periodic(const Duration(seconds: 1), (_) {
-      _duration += const Duration(seconds: 1);
-      notifyListeners();
-    });
 
     final geo.LocationSettings locationSettings = geo.LocationSettings(
       accuracy: geo.LocationAccuracy.bestForNavigation,
