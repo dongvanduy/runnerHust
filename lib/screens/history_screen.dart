@@ -106,7 +106,20 @@ class HistoryScreen extends StatelessWidget {
                             child: ElevatedButton.icon(
                               onPressed: appState.syncing
                                   ? null
-                                  : () => appState.syncHistoryToGoogleDrive(),
+                                  : () async {
+                                      try {
+                                        await appState.syncHistoryToGoogleDrive();
+                                        if (!context.mounted) return;
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text(l10n.t('syncSuccess'))),
+                                        );
+                                      } catch (_) {
+                                        if (!context.mounted) return;
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text(l10n.t('syncFailed'))),
+                                        );
+                                      }
+                                    },
                               icon: const Icon(Icons.cloud_upload_outlined),
                               label: Text(appState.syncing
                                   ? l10n.t('syncing')

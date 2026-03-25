@@ -40,6 +40,8 @@ class AppLocalizations {
       'english': 'English',
       'vietnamese': 'Tiếng Việt',
       'lastActivities': 'Your Last 2 Activities',
+      'syncSuccess': 'History synced to Google Drive successfully.',
+      'syncFailed': 'Sync failed. Please try again.',
     },
     'vi': {
       'history': 'Lịch sử',
@@ -63,6 +65,8 @@ class AppLocalizations {
       'english': 'English',
       'vietnamese': 'Tiếng Việt',
       'lastActivities': '2 hoạt động gần nhất',
+      'syncSuccess': 'Đồng bộ lịch sử lên Google Drive thành công.',
+      'syncFailed': 'Đồng bộ thất bại. Vui lòng thử lại.',
     },
   };
 

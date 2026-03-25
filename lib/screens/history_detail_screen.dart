@@ -192,14 +192,18 @@ class HistoryDetailScreen extends StatelessWidget {
   }
 
   List<LatLng> _decodeRoute(String routeJson) {
-    final List<dynamic> raw = jsonDecode(routeJson) as List<dynamic>;
-    return raw
-        .map((dynamic item) => item as Map<String, dynamic>)
-        .map((Map<String, dynamic> p) => LatLng(
-              (p['lat'] as num).toDouble(),
-              (p['lng'] as num).toDouble(),
-            ))
-        .toList();
+    try {
+      final List<dynamic> raw = jsonDecode(routeJson) as List<dynamic>;
+      return raw
+          .whereType<Map<String, dynamic>>()
+          .map((Map<String, dynamic> p) => LatLng(
+                (p['lat'] as num).toDouble(),
+                (p['lng'] as num).toDouble(),
+              ))
+          .toList();
+    } catch (_) {
+      return <LatLng>[];
+    }
   }
 
   String _formatDate(DateTime date) =>
