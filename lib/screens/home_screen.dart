@@ -36,7 +36,7 @@ class HomeScreen extends StatelessWidget {
               },
             ),
             title: const Text(
-              'RUNIX',
+              'Runix',
               style: TextStyle(
                 color: Colors.black,
                 fontWeight: FontWeight.w900,

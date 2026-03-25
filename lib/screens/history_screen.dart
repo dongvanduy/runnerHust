@@ -19,14 +19,14 @@ class HistoryScreen extends StatelessWidget {
       builder: (context, appState, _) {
         final List<RunRecord> history = appState.history;
         final double totalDistance = history.fold(
-          0,
+          0.0,
           (double sum, RunRecord run) => sum + run.distanceKm,
         );
 
         final double avgPace = history.isEmpty
             ? 0
             : history.fold(
-                  0,
+                  0.0,
                   (double sum, RunRecord run) => sum + run.avgPaceMinPerKm,
                 ) /
                 history.length;
