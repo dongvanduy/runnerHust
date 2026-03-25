@@ -30,7 +30,7 @@ class IntroScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Text(
-                  'Bolt Running Club',
+                  'RUNIX Running Club',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white,
