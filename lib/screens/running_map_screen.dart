@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
 import '../state/app_state.dart';
+import 'home_screen.dart';
 
 class RunningMapScreen extends StatefulWidget {
   const RunningMapScreen({Key? key}) : super(key: key);
@@ -115,7 +116,7 @@ class _RunningMapScreenState extends State<RunningMapScreen> {
                                 ),
                               ),
                               InkWell(
-                                onTap: () => Navigator.pop(context),
+                                onTap: () => _showStopDialog(context),
                                 child: Container(
                                   padding: const EdgeInsets.all(30),
                                   decoration: BoxDecoration(
@@ -171,6 +172,36 @@ class _RunningMapScreenState extends State<RunningMapScreen> {
         Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         Text(label, style: const TextStyle(fontSize: 14, color: Colors.black54)),
       ],
+    );
+  }
+
+  void _showStopDialog(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.t('endRunQuestion')),
+        content: Text(l10n.t('endRunDesc')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l10n.t('continueRun')),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              await context.read<AppState>().stopRunAndSave();
+              if (!context.mounted) return;
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const HomeScreen()),
+                (route) => false,
+              );
+            },
+            child: Text(l10n.t('finish')),
+          ),
+        ],
+      ),
     );
   }
 }
