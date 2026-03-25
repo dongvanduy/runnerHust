@@ -31,9 +31,9 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Chữ BOLT
+            // Chữ RUNIX
             const Text(
-              'BOLT',
+              'RUNIX',
               style: TextStyle(
                 fontSize: 60,
                 fontWeight: FontWeight.w900,
