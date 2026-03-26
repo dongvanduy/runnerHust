@@ -13,7 +13,9 @@ class AppState extends ChangeNotifier {
     RunHistoryRepository? historyRepository,
     GoogleDriveSyncService? cloudSyncService,
   })  : _historyRepository = historyRepository ?? RunHistoryRepository(),
-        _cloudSyncService = cloudSyncService ?? GoogleDriveSyncService();
+        _cloudSyncService = cloudSyncService ?? GoogleDriveSyncService() {
+    trackingService.addListener(_onTrackingChanged);
+  }
 
   final RunHistoryRepository _historyRepository;
   final GoogleDriveSyncService _cloudSyncService;
@@ -29,6 +31,10 @@ class AppState extends ChangeNotifier {
   bool get isLoadingHistory => _isLoadingHistory;
   bool get syncing => _syncing;
   Locale get locale => _locale;
+
+  void _onTrackingChanged() {
+    notifyListeners();
+  }
 
   Future<void> bootstrap() async {
     _history = await _historyRepository.getAllRuns();
@@ -85,5 +91,12 @@ class AppState extends ChangeNotifier {
       _syncing = false;
       notifyListeners();
     }
+  }
+
+  @override
+  void dispose() {
+    trackingService.removeListener(_onTrackingChanged);
+    trackingService.dispose();
+    super.dispose();
   }
 }
