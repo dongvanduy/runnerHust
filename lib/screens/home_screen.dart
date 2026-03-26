@@ -98,10 +98,14 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               Positioned(
-                bottom: 30,
-                left: 20,
-                right: 20,
-                child: _buildFloatingBottomBar(context, l10n),
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: SafeArea(
+                  top: false,
+                  minimum: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                  child: _buildFloatingBottomBar(context, l10n),
+                ),
               ),
             ],
           ),
