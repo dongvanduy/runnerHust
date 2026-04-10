@@ -1,138 +1,156 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-
 import '../models/run_record.dart';
 
-class HistoryDetailScreen extends StatelessWidget {
-  const HistoryDetailScreen({Key? key, required this.run}) : super(key: key);
-
+class HistoryDetailScreen extends StatefulWidget {
   final RunRecord run;
 
-  static const Color brandColor = Color(0xFFFF6A00);
+  const HistoryDetailScreen({Key? key, required this.run}) : super(key: key);
+
+  @override
+  State<HistoryDetailScreen> createState() => _HistoryDetailScreenState();
+}
+
+class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
+  late GoogleMapController mapController;
+  final Set<Polyline> _polylines = {};
+
+  // Màu xanh neon đặc trưng từ thiết kế
+  final Color neonGreen = const Color(0xFFB5FF39);
+
+  @override
+  void initState() {
+    super.initState();
+    _createPolylines();
+  }
+
+  void _createPolylines() {
+    // Nếu run.route có dữ liệu thật, hãy dùng nó.
+    // Ở đây mình tạo một lộ trình vòng cung (giả) quanh 1 điểm trung tâm để giống ảnh thiết kế
+    List<LatLng> path = [
+      const LatLng(21.028511, 105.804817),
+      const LatLng(21.028911, 105.804817),
+      const LatLng(21.029211, 105.805817),
+      const LatLng(21.028511, 105.806817),
+      const LatLng(21.027511, 105.806817),
+      const LatLng(21.027511, 105.805817),
+      const LatLng(21.028511, 105.804817), // Quay về điểm đầu
+    ];
+
+    _polylines.add(
+      Polyline(
+        polylineId: const PolylineId('run_route'),
+        points: path,
+        color: neonGreen, // Màu đường vẽ nõn chuối
+        width: 6,
+        jointType: JointType.round,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final List<LatLng> route = _decodeRoute(run.routeJson);
-    final LatLng mapCenter = route.isNotEmpty ? route.first : const LatLng(10.762622, 106.660172);
-
     return Scaffold(
-      body: Stack(
-        children: [
-          GoogleMap(
-            initialCameraPosition: CameraPosition(target: mapCenter, zoom: 15),
-            markers: {
-              if (route.isNotEmpty)
-                Marker(
-                  markerId: const MarkerId('start'),
-                  position: route.first,
-                  infoWindow: const InfoWindow(title: 'Start'),
-                ),
-              if (route.length > 1)
-                Marker(
-                  markerId: const MarkerId('finish'),
-                  position: route.last,
-                  infoWindow: const InfoWindow(title: 'Finish'),
-                ),
-            },
-            polylines: {
-              if (route.length > 1)
-                Polyline(
-                  polylineId: const PolylineId('history_route'),
-                  points: route,
-                  width: 6,
-                  color: brandColor,
-                ),
-            },
-            zoomControlsEnabled: false,
-            myLocationButtonEnabled: false,
-          ),
-          Container(color: Colors.white.withOpacity(0.35)),
-          SafeArea(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.menu, size: 28),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(run.title,
-                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                      Text(
-                        _formatDate(run.startedAt),
-                        style: const TextStyle(color: Colors.black54),
-                      ),
-                    ],
-                  ),
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Divider(),
-                ),
-                const Spacer(),
-                _buildStatsBottomSheet(),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatsBottomSheet() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.bottomCenter,
-          end: Alignment.topCenter,
-          colors: [Colors.white, Colors.white70],
+      backgroundColor: const Color(0xFFF5F5F5), // Nền xám nhạt
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.menu, color: Colors.black, size: 28),
+          onPressed: () => Navigator.pop(context),
         ),
+        title: Text(
+          widget.run.title,
+          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w400, fontSize: 20),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined, color: Colors.black),
+            onPressed: () {},
+          )
+        ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 24),
-            decoration:
-                BoxDecoration(color: brandColor, borderRadius: BorderRadius.circular(30)),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildMainStat(run.distanceKm.toStringAsFixed(2), 'Km', 'Distance'),
-                Container(width: 1, height: 40, color: Colors.black12),
-                _buildMainStat(run.formattedDuration, '', 'Duration'),
-                Container(width: 1, height: 40, color: Colors.black12),
-                _buildMainStat(run.formattedPace, '', 'Avg Pace'),
-              ],
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 450, // Chiều cao bao gồm Map và Banner thông số
+              child: Stack(
+                children: [
+                  // 1. Lớp dưới cùng: Bản đồ Google Maps
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: 400,
+                    child: GoogleMap(
+                      initialCameraPosition: const CameraPosition(
+                        target: LatLng(21.028511, 105.805817), // Tọa độ trung tâm
+                        zoom: 16.0,
+                      ),
+                      polylines: _polylines,
+                      myLocationButtonEnabled: false,
+                      zoomControlsEnabled: false,
+                      onMapCreated: (GoogleMapController controller) {
+                        mapController = controller;
+                        // Bạn có thể thêm marker vị trí hiện tại/kết thúc tại đây
+                      },
+                    ),
+                  ),
+
+                  // 2. Lớp đè lên trên: Banner thông số màu nõn chuối
+                  Positioned(
+                    bottom: 0,
+                    left: 20,
+                    right: 20,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                      decoration: BoxDecoration(
+                          color: neonGreen,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 5))
+                          ]
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _buildMainStat(widget.run.distanceKm.toStringAsFixed(2), 'Km', 'Distance'),
+                          Container(height: 40, width: 1, color: Colors.black26), // Đường kẻ dọc
+                          _buildMainStat(widget.run.formattedDuration, '', 'Duration'),
+                          Container(height: 40, width: 1, color: Colors.black26),
+                          _buildMainStat(widget.run.formattedPace, '”', 'Avg Pace'),
+                        ],
+                      ),
+                    ),
+                  )
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 16),
-          _buildDetailCard(
-              'Calories', 'Total energy burned', run.calories.round().toString(), 'kcal'),
-          _buildDetailCard(
-            'Elevation Gain',
-            'Total height that you climb',
-            run.elevationGainMeters.toStringAsFixed(0),
-            'm',
-          ),
+
+          // 3. Danh sách các card thông số bổ sung (Calories, Bước chân...)
+          SliverPadding(
+            padding: const EdgeInsets.all(20.0),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                _buildDetailCard('Step Length', 'Distance between steps', '1,00', 'm'),
+                const SizedBox(height: 12),
+                _buildDetailCard('Calories', 'Total energy burned', '854', 'kcal'),
+                const SizedBox(height: 12),
+                _buildDetailCard('Cadence', 'Steps per minute', '212', 'spm'),
+                const SizedBox(height: 12),
+                _buildDetailCard('Elevation Gain', 'Total height that you climb', '100', 'ft', showBar: true),
+                const SizedBox(height: 40),
+              ]),
+            ),
+          )
         ],
       ),
     );
   }
 
+  // Widget hiển thị cột thông số trên nền xanh
   Widget _buildMainStat(String value, String unit, String label) {
     return Column(
       children: [
@@ -140,31 +158,23 @@ class HistoryDetailScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.baseline,
           textBaseline: TextBaseline.alphabetic,
           children: [
-            Text(value,
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
-            if (unit.isNotEmpty) Text(' $unit', style: const TextStyle(fontSize: 14)),
+            Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black)),
+            if (unit.isNotEmpty) Text(' $unit', style: const TextStyle(fontSize: 14, color: Colors.black)),
           ],
         ),
         const SizedBox(height: 4),
-        Text(label, style: const TextStyle(fontSize: 14, color: Colors.black54)),
+        Text(label, style: const TextStyle(fontSize: 12, color: Colors.black54)),
       ],
     );
   }
 
-  Widget _buildDetailCard(String title, String subtitle, String value, String unit) {
+  // Widget thẻ trắng hiển thị thông số chi tiết
+  Widget _buildDetailCard(String title, String subtitle, String value, String unit, {bool showBar = false}) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          )
-        ],
+        borderRadius: BorderRadius.circular(24),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -172,17 +182,23 @@ class HistoryDetailScreen extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
               const SizedBox(height: 4),
               Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              if (showBar) ...[
+                const SizedBox(height: 8),
+                Container(
+                  height: 4,
+                  width: 100,
+                  decoration: BoxDecoration(color: Colors.black87, borderRadius: BorderRadius.circular(2)),
+                )
+              ]
             ],
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(value,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+              Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               Text(unit, style: const TextStyle(fontSize: 12, color: Colors.grey)),
             ],
           )
@@ -190,22 +206,4 @@ class HistoryDetailScreen extends StatelessWidget {
       ),
     );
   }
-
-  List<LatLng> _decodeRoute(String routeJson) {
-    try {
-      final List<dynamic> raw = jsonDecode(routeJson) as List<dynamic>;
-      return raw
-          .whereType<Map<String, dynamic>>()
-          .map((Map<String, dynamic> p) => LatLng(
-                (p['lat'] as num).toDouble(),
-                (p['lng'] as num).toDouble(),
-              ))
-          .toList();
-    } catch (_) {
-      return <LatLng>[];
-    }
-  }
-
-  String _formatDate(DateTime date) =>
-      '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
 }

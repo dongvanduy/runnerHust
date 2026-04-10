@@ -3,7 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 import 'l10n/app_localizations.dart';
-import 'screens/splash_screen.dart';
+import 'screens/home_screen.dart'; // 1. Import HomeScreen thay vì SplashScreen
 import 'state/app_state.dart';
 
 void main() {
@@ -33,7 +33,8 @@ class MyApp extends StatelessWidget {
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
-            home: const SplashScreen(),
+            // 2. Trỏ trực tiếp trang chủ về HomeScreen
+            home: const HomeScreen(),
           );
         },
       ),
