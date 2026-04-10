@@ -113,10 +113,10 @@ class HistoryScreen extends StatelessWidget {
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(content: Text(l10n.t('syncSuccess'))),
                                         );
-                                      } catch (_) {
+                                      } catch (e) {
                                         if (!context.mounted) return;
                                         ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text(l10n.t('syncFailed'))),
+                                          SnackBar(content: Text('$e')),
                                         );
                                       }
                                     },
