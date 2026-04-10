@@ -19,25 +19,57 @@ class GoogleDriveSyncService {
       throw Exception('Google sign-in failed.');
     }
 
-    final Map<String, String> authHeaders = await account.authHeaders;
-    final _GoogleAuthClient client = _GoogleAuthClient(authHeaders);
-    final drive.DriveApi driveApi = drive.DriveApi(client);
-
-    final String content = jsonEncode({
-      'updatedAt': DateTime.now().toIso8601String(),
-      'runs': runs.map((r) => r.toCloudJson()).toList(),
-    });
-
-    final drive.File file = drive.File()
-      ..name = 'runner_history_backup.json'
-      ..mimeType = 'application/json';
-
-    await driveApi.files.create(
-      file,
-      uploadMedia: drive.Media(Stream.value(utf8.encode(content)), content.length),
+    final bool hasScope = await _googleSignIn.canAccessScopes(
+      <String>[drive.DriveApi.driveFileScope],
     );
 
-    client.close();
+    if (!hasScope) {
+      final bool granted = await _googleSignIn.requestScopes(
+        <String>[drive.DriveApi.driveFileScope],
+      );
+      if (!granted) {
+        throw Exception('Google Drive permission was not granted.');
+      }
+    }
+
+    final Map<String, String> authHeaders = await account.authHeaders;
+    final _GoogleAuthClient client = _GoogleAuthClient(authHeaders);
+
+    try {
+      final drive.DriveApi driveApi = drive.DriveApi(client);
+
+      final String content = jsonEncode(<String, dynamic>{
+        'updatedAt': DateTime.now().toIso8601String(),
+        'runs': runs.map((RunRecord r) => r.toCloudJson()).toList(),
+      });
+
+      final drive.File file = drive.File()
+        ..name = 'runner_history_backup.json'
+        ..mimeType = 'application/json';
+
+      final drive.Media media =
+          drive.Media(Stream.value(utf8.encode(content)), content.length);
+
+      final drive.FileList existing = await driveApi.files.list(
+        q: "name = 'runner_history_backup.json' and trashed = false",
+        spaces: 'drive',
+        $fields: 'files(id, name, modifiedTime)',
+        orderBy: 'modifiedTime desc',
+        pageSize: 1,
+      );
+
+      final String? existingFileId = existing.files?.isNotEmpty == true
+          ? existing.files!.first.id
+          : null;
+
+      if (existingFileId == null) {
+        await driveApi.files.create(file, uploadMedia: media);
+      } else {
+        await driveApi.files.update(file, existingFileId, uploadMedia: media);
+      }
+    } finally {
+      client.close();
+    }
   }
 }
 
