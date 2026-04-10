@@ -35,12 +35,19 @@ android {
         jvmTarget = JavaVersion.VERSION_11.toString()
     }
 
-    val mapsApiKey = (
+    val mapsApiKeyRaw = (
         localProperties.getProperty("MAPS_API_KEY")
             ?: localProperties.getProperty("GOOGLE_MAPS_API_KEY")
             ?: localProperties.getProperty("mapsApiKey")
+            ?: System.getenv("MAPS_API_KEY")
             ?: ""
         ).trim()
+
+    val mapsApiKey = mapsApiKeyRaw
+        .removePrefix("\"")
+        .removeSuffix("\"")
+        .removePrefix("'")
+        .removeSuffix("'")
 
     defaultConfig {
         applicationId = "com.runer_hust.runer"
