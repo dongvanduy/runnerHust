@@ -60,13 +60,14 @@ class _RunningMapScreenState extends State<RunningMapScreen> {
             children: [
               GoogleMap(
                 initialCameraPosition: CameraPosition(target: initialTarget, zoom: 17),
+                mapType: MapType.normal,
                 myLocationEnabled: true,
                 myLocationButtonEnabled: false,
+                zoomControlsEnabled: false,
                 polylines: polylines,
                 markers: markers,
                 onMapCreated: (controller) => _mapController = controller,
               ),
-              Container(color: Colors.white.withOpacity(0.2)),
               SafeArea(
                 child: Padding(
                   padding: const EdgeInsets.all(24.0),
